@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wechuang.mallshop.analytics.dao.AnalytiscTradeDao">
+    <select id="getTradeAmount" resultType="com.wechuang.mallshop.analytics.model.vo.TradeAmountVo">
+        SELECT
+            sum( order_payment_amount ) AS amount
+        FROM
+            pay_consume_trade
+        where
+            trade_is_paid IN ( 3012, 3013 )
+            <if test="startTime != null and endTime != null">
+                AND trade_paid_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            AND trade_type_id IN ( 1201, 1214 )
+            <if test="buyerId != null">
+                AND buyer_id = #{buyerId}
+            </if>
+            <if test="chainId != null and chainId != 0">
+                AND chain_id = #{chainId}
+            </if>
+            <if test="storeId != null and storeId != 0">
+                AND store_id = #{storeId}
+            </if>
+    </select>
+</mapper>

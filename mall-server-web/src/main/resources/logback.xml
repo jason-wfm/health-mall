@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" debug="false">
+    <!-- 指定日志文件存放目录 -->
+    <property name="log.home" value="./logs"/>
+    <!-- 控制台输出 -->
+    <appender name="consoleLog" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 彩色日志 -->
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %magenta(%-5level) %green([%-50.50class]) >>> %cyan(%msg) %n%ex
+            </pattern>
+        </encoder>
+    </appender>
+    <!-- 仅记录INFO级别日志的Appender -->
+    <appender name="infoFileLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.home}/info.log</file>
+        <!-- 日志滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 归档日志文件命名 -->
+            <fileNamePattern>${log.home}/info_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 单个归档日志文件最大限制 -->
+            <totalSizeCap>1GB</totalSizeCap>
+            <!-- 30天的归档周期，超出数量就删除旧文件 -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50}[%L] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
+    </appender>
+    <!-- 仅记录WARN级别日志的Appender -->
+    <appender name="warnFileLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.home}/warn.log</file>
+        <!-- 日志滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 归档日志文件命名 -->
+            <fileNamePattern>${log.home}/warn_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 单个归档日志文件最大限制 -->
+            <totalSizeCap>1GB</totalSizeCap>
+            <!-- 30天的归档周期，超出数量就删除旧文件 -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50}[%L] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
+    </appender>
+    <!-- 仅记录ERROR级别日志的Appender -->
+    <appender name="errorFileLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.home}/error.log</file>
+        <!-- 日志滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 归档文件 -->
+            <fileNamePattern>${log.home}/error_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 单个归档日志文件最大限制 -->
+            <totalSizeCap>1GB</totalSizeCap>
+            <!-- 30天的归档周期，超出数量就删除旧文件 -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50}[%L] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="consoleLog"/>
+        <appender-ref ref="infoFileLog"/>
+        <appender-ref ref="warnFileLog"/>
+        <appender-ref ref="errorFileLog"/>
+    </root>
+</configuration>

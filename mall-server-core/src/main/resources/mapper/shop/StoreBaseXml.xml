@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wechuang.mallshop.shop.dao.StoreBaseDao">
+
+    <select id="getNearShop" resultType="com.wechuang.mallshop.shop.model.output.StoreStreetOutput">
+        SELECT * FROM
+        (SELECT
+        b.*,
+        a.store_favorite_num,
+        a.store_sales_num,
+        a.store_evaluation_rate,
+        (ST_Distance(store_location, POINT(#{params.lng}, #{params.lat})) * 111195) AS distance
+        FROM
+        shop_store_base b
+        INNER JOIN
+        shop_store_analytics a
+        ON b.store_id=a.store_id
+        <where>
+            <if test="params.storeId!=null">
+                and b.store_id=#{params.storeId}
+            </if>
+            <if test="params.storeCategoryId!=null">
+                and b.store_category_id=#{params.storeCategoryId}
+            </if>
+            <if test="params.storeIsOpen!=null">
+                and b.store_is_open=#{params.storeIsOpen}
+            </if>
+            <if test="params.storeType!=null">
+                and b.store_type=#{params.storeType}
+            </if>
+            <if test="params.storeName!=null">
+                and b.store_name like concat('%', #{params.storeName}, '%')
+            </if>
+            <if test="params.sidx!=null and params.sort!=null">
+                ORDER BY `${params.sidx}` ${params.sort}
+            </if>
+        </where>
+        ) tempTable
+        <where>
+            <!-- 仅当显式传入有效距离(小于ListReq默认哨兵值20000000000)时过滤;
+                 默认哨兵值下 MySQL8 派生表别名优化导致 Unknown column 'distance';
+                 注: 哨兵阈值用int范围内数值(10^9米),OGNL数值字面量默认int,超范围会NumberFormatException -->
+            <if test="params.distance != null and params.distance &lt; 1000000000">
+                distance &lt;= #{params.distance}
+            </if>
+        </where>
+    </select>
+</mapper>

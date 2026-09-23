@@ -1,0 +1,85 @@
+# 开发环境配置
+
+# 数据源配置
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/dev_shop_suite?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&&zeroDateTimeBehavior=convertToNull
+    username: dev_shop_suite
+    password: ixPeArzhCZZjHw3j
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+  data:
+    redis:
+      host: 127.0.0.1 # Redis服务器地址
+      database: 8 # Redis数据库索引（默认为0）
+      # database-data: 9 # 这个自定义属性保持不变，但Spring Data Redis不会自动使用它，需要你在代码中处理
+      port: 6379 # Redis服务器连接端口
+      password: dev_pwd_123 # Redis服务器连接密码（默认为空）
+      timeout: 60s # 连接空闲超过N(s秒、ms毫秒)后关闭，0为禁用，这里配置值和tcp-keepalive值一致
+      # 建议添加通用连接池配置（虽然不是必须，但符合Spring Boot 3推荐做法）
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    virtual-host: /
+    # RabbitMQ 监听器配置 - 路径有变化
+    listener:
+      simple:
+        acknowledge-mode: manual  #手动确认消息，不使用默认的消费端确认
+        retry:
+          enabled: true # 开启重试次数的限制，解决消费者出现异常死循环问题
+          max-attempts: 3 #最大重试次数
+          initial-interval: 1000ms # 添加时间单位 (Spring Boot 3 更推荐明确单位)
+    # Publisher确认配置 - 属性名有变化
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    username: guest
+    password: guest
+
+
+
+url:
+  base: "http://127.0.0.1:${server.port}"
+  pc: ${url.base}
+  h5: ${url.base}/h5
+  admin: ${url.base}/admin
+  api:
+    manage: ${url.base}/manage
+    front: ${url.base}/front
+
+  websocket-url: wss://im.suteshop.com:9501
+static:
+  file:
+    path: /opt/apps/mall/public/static
+    url: ${url.api.front}/front/static
+mall:
+  socket:
+    url: wss://demo.mallsuite.cn/mallsuiteImSocketServer
+
+upload:
+  # 文件上传磁盘位置 d:/public/uploads
+  dir: ""
+  dir-index: 0
+
+  # 上传附件访问网址
+  web-url: ${url.base}
+
+  #文件上传是否使用uuid命名
+  uuid-name: true
+
+
+  #文件上传生成缩略图的大小(kb)
+  thumbnail-size: 60
+
+  #OpenOffice的安装目录
+  open-office-home: C:/OpenOffice4/
+
+  # 本地环境静态文件路径
+  filepath: D:/wwwroot/mall/public/static/
+
+jodconverter:
+  local:
+    enabled: false
+    office-home: /usr/lib/libreoffice  # Linux example
+    # office-home: C:/Program Files/LibreOffice  # Windows example
+    port-numbers: 2001,2002,2003
+    max-tasks-per-process: 100

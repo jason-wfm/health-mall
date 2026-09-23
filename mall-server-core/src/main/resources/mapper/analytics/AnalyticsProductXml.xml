@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wechuang.mallshop.analytics.dao.AnalyticsProductDao">
+    <select id="getProductTimeLine" resultType="com.wechuang.mallshop.analytics.model.output.TimelineOutput">
+        SELECT count(*) num,
+               from_unixtime(round(product_add_time / 1000), '%m-%d') AS time
+        FROM pt_product_index
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                AND product_add_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="storeId != null and storeId != 0">
+                AND store_id = #{storeId}
+            </if>
+        </where>
+        GROUP BY time
+        ORDER BY product_add_time
+    </select>
+
+    <select id="getProductNum" resultType="com.wechuang.mallshop.analytics.model.vo.CommonNumVo">
+        SELECT count(*) num
+        FROM pt_product_index
+        <where>
+            <if test="params.stime!=null and params.etime!=null">
+                AND product_add_time BETWEEN #{params.stime} AND #{params.etime}
+            </if>
+
+            <if test="params.productStateId!=null">
+                AND product_state_id = #{params.productStateId}
+            </if>
+
+            <if test="params.storeId != null and params.storeId != 0">
+                AND store_id = #{params.storeId}
+            </if>
+
+            <if test="params.categoryId!=null">
+                AND category_id = #{params.categoryId}
+            </if>
+        </where>
+    </select>
+
+</mapper>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wechuang.mallshop.pt.dao.ProductIndexDao">
+
+    <select id="getVersion" resultType="java.lang.String">
+        SELECT VERSION()
+    </select>
+
+    <select id="getProductIdByStoreQuery" resultType="java.lang.Integer">
+        SELECT
+        product_id
+        FROM
+        (
+        SELECT
+        product_id,
+        store_id,
+        IF
+        ( @prev_store_id = store_id, @row_num := @row_num + 1, @row_num := 1 ) AS row_number,
+        @prev_store_id := store_id
+        FROM
+        pt_product_index
+        CROSS JOIN ( SELECT @row_num := 0, @prev_store_id := NULL ) vars
+        <where>
+            <if test="store_ids!=null">
+                store_id in
+                <foreach collection="store_ids" item="store_id" index="index" open="(" close=")" separator=",">
+                    #{store_id}
+                </foreach>
+            </if>
+            <if test="product_state_id != null">
+                and product_state_id = #{product_state_id}
+            </if>
+        </where>
+        ORDER BY
+        store_id,
+        product_add_time DESC,
+        product_id DESC
+        ) grouped_table
+        <where>
+            <if test="row_number != null">
+                row_number &lt;= #{row_number}
+            </if>
+        </where>
+        ORDER BY
+        store_id,
+        product_id DESC;
+    </select>
+
+    <select id="getProductIdByStoreHigh" resultType="java.lang.Integer">
+        SELECT product_id
+        FROM (
+        SELECT
+        product_id,
+        store_id,
+        ROW_NUMBER() OVER (PARTITION BY store_id ORDER BY product_id DESC) AS row_num
+        FROM pt_product_index
+        <where>
+            <if test="store_ids!=null">
+                store_id in
+                <foreach collection="store_ids" item="store_id" index="index" open="(" close=")" separator=",">
+                    #{store_id}
+                </foreach>
+            </if>
+            <if test="product_state_id != null">
+                and product_state_id = #{product_state_id}
+            </if>
+        </where>
+        ) AS RankedProducts
+        <where>
+            <if test="row_number != null">
+                row_num &lt;= #{row_number}
+            </if>
+        </where>
+        ORDER BY store_id ASC, product_id DESC;
+    </select>
+
+</mapper>

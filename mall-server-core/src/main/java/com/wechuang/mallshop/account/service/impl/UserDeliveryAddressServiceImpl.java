@@ -1,0 +1,99 @@
+// +----------------------------------------------------------------------
+// | ShopSuite商城系统 [ 赋能开发者，助力企业发展 ]
+// +----------------------------------------------------------------------
+// | 版权所有 随商信息技术（上海）有限公司
+// +----------------------------------------------------------------------
+// | 未获商业授权前，不得将本软件用于商业用途。禁止整体或任何部分基础上以发展任何派生版本、
+// | 修改版本或第三方版本用于重新分发。
+// +----------------------------------------------------------------------
+// | 官方网站: https://www.shopsuite.cn  https://www.modulithshop.cn
+// +----------------------------------------------------------------------
+// | 版权和免责声明:
+// | 本公司对该软件产品拥有知识产权（包括但不限于商标权、专利权、著作权、商业秘密等）
+// | 均受到相关法律法规的保护，任何个人、组织和单位不得在未经本团队书面授权的情况下对所授权
+// | 软件框架产品本身申请相关的知识产权，禁止用于任何违法、侵害他人合法权益等恶意的行为，禁
+// | 止用于任何违反我国法律法规的一切项目研发，任何个人、组织和单位用于项目研发而产生的任何
+// | 意外、疏忽、合约毁坏、诽谤、版权或知识产权侵犯及其造成的损失 (包括但不限于直接、间接、
+// | 附带或衍生的损失等)，本团队不承担任何法律责任，本软件框架只能用于公司和个人内部的
+// | 法律所允许的合法合规的软件产品研发，详细见https://www.modulithshop.cn/policy
+// +----------------------------------------------------------------------
+package com.wechuang.mallshop.account.service.impl;
+
+import cn.hutool.core.collection.CollectionUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.wechuang.mallshop.account.model.entity.UserDeliveryAddress;
+import com.wechuang.mallshop.account.model.entity.UserInfo;
+import com.wechuang.mallshop.account.model.req.UserDeliveryAddressListReq;
+import com.wechuang.mallshop.account.repository.UserDeliveryAddressRepository;
+import com.wechuang.mallshop.account.repository.UserInfoRepository;
+import com.wechuang.mallshop.account.service.UserDeliveryAddressService;
+import com.wechuang.mallshop.common.exception.BusinessException;
+import com.wechuang.mallshop.common.utils.CheckUtil;
+import com.wechuang.mallshop.core.web.service.impl.BaseServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.Serializable;
+import java.util.List;
+
+import static com.wechuang.mallshop.common.utils.I18nUtil.__;
+
+/**
+ * <p>
+ * 用户地址表 服务实现类
+ * </p>
+ *
+ * @author Xinze
+ * @since 2018-07-04
+ */
+@Service
+public class UserDeliveryAddressServiceImpl extends BaseServiceImpl<UserDeliveryAddressRepository, UserDeliveryAddress, UserDeliveryAddressListReq> implements UserDeliveryAddressService {
+
+    @Autowired
+    private UserDeliveryAddressRepository deliveryAddressRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
+
+    @Override
+    public boolean saveDeliveryAddress(UserDeliveryAddress userDeliveryAddress) {
+
+        if (userDeliveryAddress.getUdIsDefault()) {
+            QueryWrapper<UserDeliveryAddress> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("user_id", userDeliveryAddress.getUserId());
+            queryWrapper.eq("ud_is_default", true);
+
+            if (CheckUtil.isNotEmpty(userDeliveryAddress.getUdId())) {
+                queryWrapper.ne("ud_id", userDeliveryAddress.getUdId());
+            }
+
+            List<UserDeliveryAddress> deliveryAddresses = find(queryWrapper);
+
+            if (CollectionUtil.isNotEmpty(deliveryAddresses)) {
+                deliveryAddresses.forEach(item -> item.setUdIsDefault(false));
+                deliveryAddressRepository.saveOrUpdate(deliveryAddresses);
+            }
+        }
+
+        return save(userDeliveryAddress);
+    }
+
+    @Override
+    public List<UserDeliveryAddress> getByUserId(Integer saleId, Integer userId) {
+        QueryWrapper<UserInfo> userInfoQueryWrapper = new QueryWrapper<>();
+        userInfoQueryWrapper.eq("user_sale_id", saleId);
+        userInfoQueryWrapper.eq("user_id", userId);
+
+        long count = userInfoRepository.count(userInfoQueryWrapper);
+
+        if (count <= 0) {
+            throw new BusinessException(__("销售员与用户不匹配！"));
+        }
+        QueryWrapper<UserDeliveryAddress> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        queryWrapper.orderByDesc("ud_is_default");
+        queryWrapper.orderByDesc("ud_time");
+
+        return find(queryWrapper);
+    }
+}

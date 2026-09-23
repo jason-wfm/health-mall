@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wechuang.mallshop.trade.dao.OrderBaseDao">
+
+
+    <select id="getNewOrderTime" resultType="com.wechuang.mallshop.trade.model.vo.OrderBaseVo">
+        SELECT
+            user_id,
+            MAX(order_time) AS order_time
+        FROM
+            trade_order_base
+        WHERE
+            user_id IN <foreach item="id" collection="user_ids" separator="," open="(" close=")" index="i">#{id}</foreach>
+        GROUP BY
+            user_id
+    </select>
+</mapper>

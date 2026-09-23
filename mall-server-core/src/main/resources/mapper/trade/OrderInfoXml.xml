@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wechuang.mallshop.trade.dao.OrderInfoDao">
+
+
+
+    <select id="getOrderNumBySale" resultType="java.lang.Long">
+        SELECT
+            COUNT(*)
+        FROM
+        trade_order_info
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                create_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="saleId!=null">
+                and order_sale_id = #{saleId}
+            </if>
+        </where>
+    </select>
+
+    <select id="getOrderAmountBySale" resultType="java.math.BigDecimal">
+        SELECT
+            sum(pct.order_payment_amount)
+        FROM
+        trade_order_info toi
+        inner join pay_consume_trade pct on toi.order_id = pct.order_id
+        <where>
+            pct.trade_is_paid IN (3012, 3013)
+            <if test="startTime!=null and endTime!=null">
+                and toi.create_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="saleId!=null">
+                and toi.order_sale_id = #{saleId}
+            </if>
+        </where>
+    </select>
+
+</mapper>

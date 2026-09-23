@@ -1,0 +1,184 @@
+# 端口
+server:
+  port: 8100
+  # 最大HTTP头大小 - 属性名已更改
+  max-http-request-header-size: 4048576 # 由 max-http-header-size 改为 max-http-request-header-size
+  tomcat:
+    max-http-form-post-size: 1000MB
+    # 连接超时 - 配置方式已更改，单位建议使用 Duration 格式
+    connection-timeout: 60s # 60000 改为 60s (更可读)
+
+# 多环境配置
+spring:
+  main:
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
+  profiles:
+    active: @profiles.active@
+  application:
+    name: shopsuite
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: always # 每次启动项目都重新清空定时任务
+
+  # 连接池配置
+  datasource:
+    druid:
+      aop-patterns: com.wechuang.mallshop.*.*.service.*
+      # 通用配置（所有环境共享）
+      # 连接池大小
+      initial-size: 5
+      max-active: 50
+      min-idle: 5
+
+      # 连接超时
+      max-wait: 6000
+      connect-timeout: 10000
+      socket-timeout: 60000
+
+      # 连接验证
+      validation-query: "SELECT 1"
+      validation-query-timeout: 5
+      test-while-idle: true
+      test-on-borrow: false  # 临时开启，稳定后可设为false
+      test-on-return: false
+
+      # 连接回收与保活（核心！）
+      time-between-eviction-runs-millis: 45000      # 45秒   每45秒检查一次空闲连接
+      min-evictable-idle-time-millis: 180000        # 5分钟  最小空闲时间（ms）  闲60 * 5秒的连接可被回收  要小于 show global variables like 'wait_timeout';
+      max-evictable-idle-time-millis: 1800000       # 30分钟
+      keep-alive: true
+      keep-alive-between-time-millis: 60000         # 60秒
+
+      # 连接失败处理
+      connection-error-retry-attempts: 2
+      break-after-acquire-failure: true  # 获取失败后不中断，继续重试   数据库服务宕机自动重连机制
+
+      # 连接泄漏
+      remove-abandoned: true		    # 开启自动回收连接
+      remove-abandoned-timeout: 180	    # 超时秒数
+      log-abandoned: false			    # 打印回收日志（推荐开发开启,正式关闭）
+
+      # 其他
+      pool-prepared-statements: false     # 开启预编译语句池
+      max-pool-prepared-statement-per-connection-size: 50  # 最大预编译语句数
+      query-timeout: 30
+      transaction-query-timeout: 30
+
+      # Seata 相关配置（如果使用Seata）
+      use-global-data-source-proxy: false  # 如果Seata版本较新，可能需要设置为false
+
+      # 监控配置
+      web-stat-filter:
+        enabled: true
+        url-pattern: "/*"
+        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*,/actuator/*,/swagger-ui/*,/v3/api-docs/*"      #不统计这些请求数据
+      stat-view-servlet:
+        enabled: true
+        url-pattern: "/druid/*"
+        login-username: admin
+        login-password: admin123abc$T1
+        reset-enable: false
+        allow: ""  # 限制访问IP 127.0.0.1,192.168.1.0/24
+        deny: ""  # 拒绝的IP
+
+      # 防火墙配置（生产环境重要）
+      filter:
+        wall:
+          enabled: false
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 2000  # 慢SQL阈值2秒
+
+  # json时间格式设置
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+
+  # 设置上传文件大小
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  # 邮件服务器配置 - Javax -> Jakarta
+  mail:
+    host: smtp.qq.com
+    username:
+    password:
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          socketFactory:
+            class: jakarta.net.ssl.SSLSocketFactory # javax.net.ssl.SSLSocketFactory -> jakarta.net.ssl.SSLSocketFactory
+            port: 465
+
+  # MVC 路径匹配 (建议评估是否真的需要，新策略性能更好)
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher # 保持不变，但请注意新默认值是 path_pattern_parser
+
+  # 缓存配置
+  cache:
+    type: redis
+  redis:
+    time-to-live: 3600000
+    key-prefix: CACHE_
+    use-key-prefix: false
+    cache-null-values: true
+
+    # Redis 连接池配置 - 使用新的通用配置替换旧的客户端特定配置
+    # lettuce:  # 注释掉或删除旧的 lettuce 专用配置
+    #   pool:
+    #     max-active: 10
+    #     max-idle: 8
+    #     min-idle: 0
+    #     max-wait: 5s
+    pool: # 使用新的通用连接池配置
+      enabled: true      # 明确启用连接池
+      max-active: 10     # 允许最大连接数，默认8（负值表示没有限制）
+      max-idle: 8        # 最大空闲连接数，默认8
+      min-idle: 0        # 最小空闲连接数，默认0
+      max-wait: 5s       # 连接用完时，新的请求等待时间(s秒、ms毫秒)，超过该时间抛出异常，(默认-1，负值表示没有限制)
+      time-between-eviction-runs: 1s # 替换旧的 time-between-eviction-runs-millis 风格配置
+
+# Mybatis-plus配置
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+  global-config:
+    banner: false 
+    db-config:
+      id-type: auto
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  type-handlers-package: com.wechuang.mallshop.common.config.mybatis
+
+# 框架配置
+config:
+  open-office-home: C:/OpenOffice4/
+  swagger-base-package: com.wechuang.mallshop.trade.controller.front
+  swagger-title: ShopSuite API文档
+  swagger-version: 1.0
+  token-key: ULgNsWJ8rPjRtnjzX/Gv2RGS80Ksnm/ZaLpvIL+NrBg=
+  public-key: "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDBT2vr+dhZElF73FJ6xiP181txKWUSNLPQQlid6DUJhGAOZblluafIdLmnUyKE8mMHhT3R+Ib3ssZcJku6Hn72yHYj/qPkCGFv0eFo7G+GJfDIUeDyalBN0QsuiE/XzPHJBuJDfRArOiWvH0BXOv5kpeXSXM8yTt5Na1jAYSiQ/wIDAQAB"
+  private-key: "MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAMFPa+v52FkSUXvcUnrGI/XzW3EpZRI0s9BCWJ3oNQmEYA5luWW5p8h0uadTIoTyYweFPdH4hveyxlwmS7oefvbIdiP+o+QIYW/R4Wjsb4Yl8MhR4PJqUE3RCy6IT9fM8ckG4kN9ECs6Ja8fQFc6/mSl5dJczzJO3k1rWMBhKJD/AgMBAAECgYEAucMakH9dWeryhrYoRHcXo4giPVJsH9ypVt4KzmOQY/7jV7KFQK3x//27UoHfUCak51sxFw9ek7UmTPM4HjikA9LkYeE7S381b4QRvFuf3L6IbMP3ywJnJ8pPr2l5SqQ00W+oKv+w/VmEsyUHr+k4Z+4ik+FheTkVWp566WbqFsECQQDjYaMcaKw3j2Zecl8T6eUe7fdaRMIzp/gcpPMfT/9rDzIQk+7ORvm1NI9AUmFv/FAlfpuAMrdL2n7p9uznWb7RAkEA2aP934kbXg5bdV0R313MrL+7WTK/qdcYxATUbMsMuWWQBoS5irrt80WCZbG48hpocJavLNjbtrjmUX3CuJBmzwJAOJg8uP10n/+ZQzjEYXh+BszEHDuw+pp8LuT/fnOy5zrJA0dO0RjpXijO3vuiNPVgHXT9z1LQPJkNrb5ACPVVgQJBALPeb4uV0bNrJDUb5RB4ghZnIxv18CcaqNIft7vuGCcFBAIPIRTBprR+RuVq+xHDt3sNXdsvom4h49+Hky1b0ksCQBBwUtVaqH6ztCtwUF1j2c/Zcrt5P/uN7IHAd44K0gIJc1+Csr3qPG+G2yoqRM8KVqLI8Z2ZYn9c+AvEE+L9OQY="
+  # [healthmall-ext] C端门店定位严格模式：false=兼容期（解析失败放行落 query 兜底，行为同旧版）；true=已定位门店时 query 越界 store_id 直接拒绝
+  store-access-strict: false
+  version: @project.version@
+  base-lang: "zh_CN"
+
+licence:
+  key: "kaNBvIxlvIPA0OCJ/xRX9XA1HETzkfjGEBt4NFBqZQ9rxgEjcq5hVyE9Ui9cDXl/Ix+jFLLfgK4RW0wvY53IzLR3Ivni2HsxUYegUPCbC+3zyPcXVklWQPpCmPbEfvctRf4iYMPwfJ/l8CjEGNUCbNoGNUfIDh/rW5hYvniYECvvLM+PrN05dzktGbxheDmqaQ6duYC6jLqYHJsMoHrFstJFBkRW5Ca3zoMzdoYOiHJwtGn3xC4cWR0y7VCN0i1s62NZI2rlGa6cH2YCpfyj5qlThwC6vgA5noolmhS07AmJf00J+MywchReVlAFMdF8UC9KrEY3FPVMHuUf9B0OXg=="
+
+redis:
+  id: "1001"
+  separator: ":"
+  expire: 3600

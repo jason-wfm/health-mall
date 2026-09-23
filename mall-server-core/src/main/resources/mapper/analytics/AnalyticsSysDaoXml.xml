@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wechuang.mallshop.analytics.dao.AnalyticsSysDao">
+    <select id="getVisitor" resultType="com.wechuang.mallshop.analytics.model.vo.VisitorVo">
+        SELECT
+            COUNT(*) AS num
+        FROM
+            sys_access_history
+        WHERE
+            1
+	    AND access_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <select id="getAccessNum" resultType="com.wechuang.mallshop.analytics.model.vo.CommonNumVo">
+        SELECT
+            COUNT(*) AS num
+        FROM
+            sys_access_history
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                AND access_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+        </where>
+    </select>
+
+    <select id="getVisitorNum" resultType="com.wechuang.mallshop.analytics.model.vo.CommonNumVo">
+        SELECT
+        COUNT(DISTINCT ( access_client_id )) AS num
+        FROM
+        sys_access_history
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                AND access_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+        </where>
+    </select>
+
+
+    <select id="getAccessItemTimeLine" resultType="com.wechuang.mallshop.analytics.model.output.TimelineOutput">
+        SELECT count(*) num,
+        from_unixtime(round(access_time / 1000), '%m-%d') AS time
+        FROM sys_access_history
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                AND access_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="itemId!=null">
+                AND item_id = #{itemId}
+            </if>
+            <if test="storeId != null and storeId != 0">
+                AND store_id = #{storeId}
+            </if>
+        </where>
+        GROUP BY time
+        ORDER BY access_time
+    </select>
+
+
+    <select id="getAccessItemNum" resultType="com.wechuang.mallshop.analytics.model.vo.CommonNumVo">
+        SELECT count(*) num
+        FROM sys_access_history
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                AND access_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="itemId!=null">
+                AND item_id = #{itemId}
+            </if>
+            <if test="storeId != null and storeId != 0">
+                AND store_id = #{storeId}
+            </if>
+        </where>
+    </select>
+
+
+    <select id="getAccessItemUserTimeLine" resultType="com.wechuang.mallshop.analytics.model.output.TimelineOutput">
+        SELECT
+        count( DISTINCT ( access_client_id ) ) AS num,
+        from_unixtime(round(access_time / 1000), '%m-%d') AS time
+        FROM sys_access_history
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                AND access_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="itemId!=null">
+                AND item_id = #{itemId}
+            </if>
+            <if test="storeId != null and storeId != 0">
+                AND store_id = #{storeId}
+            </if>
+        </where>
+        GROUP BY time
+        ORDER BY access_time
+    </select>
+
+    <select id="getAccessItemUserNum" resultType="com.wechuang.mallshop.analytics.model.vo.CommonNumVo">
+        SELECT count(DISTINCT ( access_client_id )) num
+        FROM sys_access_history
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                AND access_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="itemId!=null">
+                AND item_id = #{itemId}
+            </if>
+            <if test="storeId != null and storeId != 0">
+                AND store_id = #{storeId}
+            </if>
+        </where>
+    </select>
+
+
+    <select id="getAccessVisitorTimeLine" resultType="com.wechuang.mallshop.analytics.model.output.TimelineOutput">
+        SELECT count(*) num,
+        from_unixtime(round(access_time / 1000), '%m-%d') AS time
+        FROM sys_access_history
+        <where>
+            <if test="startTime!=null and endTime!=null">
+                AND access_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+        </where>
+        GROUP BY time
+        ORDER BY access_time
+    </select>
+    <select id="listAccessItem"
+            resultType="com.wechuang.mallshop.analytics.model.output.AnalyticsAccessItemOutput">
+        SELECT ash.item_id,ppi.item_name,ppi.product_id,ppi.item_unit_price,ppb.product_name,
+               COUNT(*) AS num
+        FROM sys_access_history ash
+                 INNER JOIN pt_product_item ppi on ash.item_id = ppi.item_id
+                 INNER JOIN pt_product_base ppb on ppi.product_id = ppb.product_id
+        <where>
+            <if test="params.stime!=null and params.etime!=null">
+                AND ash.access_time BETWEEN #{params.stime} AND #{params.etime}
+            </if>
+            <if test="params.itemId != null">
+                AND ash.item_id = #{params.itemId}
+            </if>
+            <if test="params.storeId != null and params.storeId != 0">
+                AND ash.store_id = #{params.storeId}
+            </if>
+        </where>
+        GROUP BY ash.item_id
+        ORDER BY num DESC
+            LIMIT 0, 100
+    </select>
+
+</mapper>

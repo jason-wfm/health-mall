@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE configuration>
+<configuration>
+	<!--引用默认日志配置-->
+	<include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+	<!--应用名称-->
+	<springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="springBoot"/>
+	<!--日志文件保存路径-->
+	<property name="LOG_FILE" value="/data/mallshop/logs"/>
+	<property name="LOG_FILE_PATH" value="${LOG_FILE:-${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}}/logs}"/>
+	<!--LogStash访问host-->
+	<springProperty name="LOG_STASH_HOST" scope="context" source="logstash.host" defaultValue="localhost"/>
+	<!-- 自定义日志格式 -->
+	<property name="CUSTOM_LOG_PATTERN" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level ${PID:- } [${APP_NAME:-}] [%thread] [TraceID:%X{traceId:-}] [UserID:%X{userId:-}] %-40.40logger{39} : %msg%n"/>
+	<property name="CUSTOM_ERROR_LOG_PATTERN" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level ${PID:- } [${APP_NAME:-}] [%thread] [TraceID:%X{traceId:-}] [UserID:%X{userId:-}] %-40.40logger{39} : [%X{errorCode:-}] %msg%n"/>
+	<!-- 控制台输出 -->
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>${CUSTOM_LOG_PATTERN}</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+	</appender>
+	<!-- ERROR日志输出到文件 -->
+	<appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<!--只输出ERROR级别的日志-->
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>ERROR</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<!-- 当天错误日志保存路径 -->
+		<file>${LOG_FILE_PATH}/${APP_NAME}-error.log</file>
+		<encoder>
+			<!-- 符合规范的日志格式，包含全链路追踪字段 -->
+			<pattern>${CUSTOM_ERROR_LOG_PATTERN}</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<!--设置文件命名格式-->
+			<fileNamePattern>${LOG_FILE_PATH}/${APP_NAME}/error/%d{yyyy-MM-dd}-%i.log</fileNamePattern>
+			<!--设置日志文件大小，超过就重新生成文件，默认10M-->
+			<maxFileSize>${LOG_FILE_MAX_SIZE:-10MB}</maxFileSize>
+			<!--日志文件保留天数，默认30天-->
+			<maxHistory>${LOG_FILE_MAX_HISTORY:-30}</maxHistory>
+		</rollingPolicy>
+	</appender>
+	<!-- INFO日志输出到文件 -->
+	<appender name="FILE_INFO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>INFO</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<file>${LOG_FILE_PATH}/${APP_NAME}-info.log</file>
+		<encoder>
+			<!--使用自定义日志格式-->
+			<pattern>${CUSTOM_LOG_PATTERN}</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_FILE_PATH}/${APP_NAME}/info/%d{yyyy-MM-dd}-%i.log</fileNamePattern>
+			<maxFileSize>${LOG_FILE_MAX_SIZE:-10MB}</maxFileSize>
+			<maxHistory>${LOG_FILE_MAX_HISTORY:-30}</maxHistory>
+		</rollingPolicy>
+	</appender>
+	<!-- WARN日志输出到文件 -->
+	<appender name="FILE_WARN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>WARN</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<file>${LOG_FILE_PATH}/${APP_NAME}-warn.log</file>
+		<encoder>
+			<pattern>${CUSTOM_LOG_PATTERN}</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_FILE_PATH}/${APP_NAME}/warn/%d{yyyy-MM-dd}-%i.log</fileNamePattern>
+			<maxFileSize>${LOG_FILE_MAX_SIZE:-10MB}</maxFileSize>
+			<maxHistory>${LOG_FILE_MAX_HISTORY:-30}</maxHistory>
+		</rollingPolicy>
+	</appender>
+	<!--ERROR日志输出到LogStash-->
+	<appender name="LOG_STASH_ERROR" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>ERROR</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<destination>${LOG_STASH_HOST}:4560</destination>
+		<encoder charset="UTF-8" class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+					<timeZone>Asia/Shanghai</timeZone>
+				</timestamp>
+				<!--自定义日志输出格式，添加全链路追踪字段-->
+				<pattern>
+					<pattern>{
+						"project": "shop-suite",
+						"level": "%level",
+						"service": "${APP_NAME:-}",
+						"pid": "${PID:-}",
+						"thread": "%thread",
+						"class": "%logger",
+						"traceId": "%mdc{traceId}",
+						"globalId": "%mdc{globalId}",
+						"spanId": "%mdc{spanId}",
+						"userId": "%mdc{userId}",
+						"errorCode": "%mdc{errorCode}",
+						"message": "%message",
+						"stack_trace": "%exception{20}"
+						}</pattern>
+				</pattern>
+			</providers>
+		</encoder>
+		<connectionStrategy>
+			<roundRobin>
+				<connectionTTL>5 minutes</connectionTTL>
+			</roundRobin>
+		</connectionStrategy>
+	</appender>
+	<!--业务日志输出到LogStash-->
+	<appender name="LOG_STASH_BUSINESS" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+		<destination>${LOG_STASH_HOST}:4560</destination>
+		<encoder charset="UTF-8" class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+					<timeZone>Asia/Shanghai</timeZone>
+				</timestamp>
+				<!--自定义日志输出格式，添加全链路追踪字段-->
+				<pattern>
+					<pattern>{
+						"project": "shop-suite",
+						"level": "%level",
+						"service": "${APP_NAME:-}",
+						"pid": "${PID:-}",
+						"thread": "%thread",
+						"class": "%logger",
+						"traceId": "%mdc{traceId}",
+						"globalId": "%mdc{globalId}",
+						"spanId": "%mdc{spanId}",
+						"userId": "%mdc{userId}",
+						"message": "%message",
+						"stack_trace": "%exception{20}"
+						}</pattern>
+				</pattern>
+			</providers>
+		</encoder>
+		<connectionStrategy>
+			<roundRobin>
+				<connectionTTL>5 minutes</connectionTTL>
+			</roundRobin>
+		</connectionStrategy>
+	</appender>
+	<!--接口访问记录日志输出到LogStash-->
+	<appender name="LOG_STASH_RECORD" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+		<destination>${LOG_STASH_HOST}:4560</destination>
+		<encoder charset="UTF-8" class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+					<timeZone>Asia/Shanghai</timeZone>
+				</timestamp>
+				<!--自定义日志输出格式，添加全链路追踪字段-->
+				<pattern>
+					<pattern>{
+						"project": "shop-suite",
+						"level": "%level",
+						"service": "${APP_NAME:-}",
+						"class": "%logger",
+						"traceId": "%mdc{traceId}",
+						"globalId": "%mdc{globalId}",
+						"spanId": "%mdc{spanId}",
+						"userId": "%mdc{userId}",
+						"message": "%message"
+						}</pattern>
+				</pattern>
+			</providers>
+		</encoder>
+		<connectionStrategy>
+			<roundRobin>
+				<connectionTTL>5 minutes</connectionTTL>
+			</roundRobin>
+		</connectionStrategy>
+	</appender>
+	<!-- 文件保存设置 -->
+	<!-- 开发环境日志级别为DEBUG -->
+	<springProfile name="local | dev">
+		<root level="INFO">
+			<appender-ref ref="CONSOLE"/>
+			<!--
+<appender-ref ref="LOG_STASH_ERROR"/>
+			-->
+			<appender-ref ref="FILE_INFO"/>
+			<appender-ref ref="FILE_WARN"/>
+			<appender-ref ref="FILE_ERROR"/>
+		</root>
+		<!--控制框架输出日志-->
+		<logger name="org.slf4j" level="INFO"/>
+		<logger name="springfox" level="INFO"/>
+		<logger name="io.swagger" level="INFO"/>
+		<logger name="org.springframework" level="INFO"/>
+		<logger name="org.hibernate.validator" level="INFO"/>
+		<logger name="com.baomidou.mybatisplus" level="INFO"/>
+		<logger name="com.wechuang.mallshop.common.mybatisplus.SqlLogInterceptor" level="DEBUG"/>
+		<logger name="com.wechuang.mallshop.common.weblog.ControllerLogAspect" level="INFO">
+			<!--
+<appender-ref ref="LOG_STASH_RECORD"/>
+			-->
+		</logger>
+		<logger name="com.wechuang.mallshop" level="DEBUG">
+			<!--
+<appender-ref ref="LOG_STASH_BUSINESS"/>
+			-->
+		</logger>
+	</springProfile>
+	<!-- 测试环境日志级别为WARN -->
+	<springProfile name="test">
+		<root level="INFO">
+			<appender-ref ref="CONSOLE"/>
+			<!--
+<appender-ref ref="LOG_STASH_ERROR"/>
+			-->
+			<appender-ref ref="FILE_INFO"/>
+			<appender-ref ref="FILE_WARN"/>
+			<appender-ref ref="FILE_ERROR"/>
+		</root>
+		<!--控制框架输出日志-->
+		<logger name="org.slf4j" level="INFO"/>
+		<logger name="springfox" level="INFO"/>
+		<logger name="io.swagger" level="INFO"/>
+		<logger name="org.springframework" level="INFO"/>
+		<logger name="org.hibernate.validator" level="INFO"/>
+		<logger name="com.baomidou.mybatisplus" level="INFO"/>
+		<logger name="com.wechuang.mallshop.common.mybatisplus.SqlLogInterceptor" level="ERROR"/>
+		<logger name="com.wechuang.mallshop.common.weblog.ControllerLogAspect" level="INFO">
+			<!--
+<appender-ref ref="LOG_STASH_RECORD"/>
+			-->
+		</logger>
+		<logger name="com.wechuang.mallshop" level="ERROR">
+			<!--
+<appender-ref ref="LOG_STASH_BUSINESS"/>
+			-->
+		</logger>
+	</springProfile>
+	<springProfile name="uat">
+		<root level="INFO">
+			<appender-ref ref="CONSOLE"/>
+			<!--
+            <appender-ref ref="LOG_STASH_ERROR"/>
+			-->
+			<appender-ref ref="FILE_INFO"/>
+			<appender-ref ref="FILE_WARN"/>
+			<appender-ref ref="FILE_ERROR"/>
+		</root>
+		<!--控制框架输出日志-->
+		<logger name="org.slf4j" level="INFO"/>
+		<logger name="springfox" level="INFO"/>
+		<logger name="io.swagger" level="INFO"/>
+		<logger name="org.springframework" level="INFO"/>
+		<logger name="org.hibernate.validator" level="INFO"/>
+		<logger name="com.baomidou.mybatisplus" level="INFO"/>
+		<logger name="com.wechuang.mallshop.common.mybatisplus.SqlLogInterceptor" level="INFO"/>
+		<logger name="com.wechuang.mallshop.common.weblog.ControllerLogAspect" level="INFO">
+			<!--
+<appender-ref ref="LOG_STASH_RECORD"/>
+			-->
+		</logger>
+		<logger name="com.wechuang.mallshop" level="INFO">
+			<!--
+<appender-ref ref="LOG_STASH_BUSINESS"/>
+			-->
+		</logger>
+	</springProfile>
+	<!-- 正式环境日志级别为WARN -->
+	<springProfile name="prod">
+		<root level="INFO">
+			<appender-ref ref="CONSOLE"/>
+			<!--
+            <appender-ref ref="LOG_STASH_ERROR"/>
+			-->
+			<appender-ref ref="FILE_INFO"/>
+			<appender-ref ref="FILE_WARN"/>
+			<appender-ref ref="FILE_ERROR"/>
+		</root>
+		<!--控制框架输出日志-->
+		<logger name="org.slf4j" level="INFO"/>
+		<logger name="springfox" level="INFO"/>
+		<logger name="io.swagger" level="INFO"/>
+		<logger name="org.springframework" level="INFO"/>
+		<logger name="org.hibernate.validator" level="INFO"/>
+		<logger name="com.baomidou.mybatisplus" level="INFO"/>
+		<logger name="com.wechuang.mallshop.common.mybatisplus.SqlLogInterceptor" level="ERROR"/>
+		<logger name="com.wechuang.mallshop.common.weblog.ControllerLogAspect" level="INFO">
+			<!--
+<appender-ref ref="LOG_STASH_RECORD"/>
+			-->
+		</logger>
+		<logger name="com.wechuang.mallshop" level="ERROR">
+			<!--
+<appender-ref ref="LOG_STASH_BUSINESS"/>
+			-->
+		</logger>
+	</springProfile>
+</configuration>

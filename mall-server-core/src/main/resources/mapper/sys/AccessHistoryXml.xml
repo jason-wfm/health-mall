@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wechuang.mallshop.sys.dao.AccessHistoryDao">
+
+    <select id="getUserByItemIds"
+            resultType="com.wechuang.mallshop.sys.model.output.AnalyticsAccessHistoryOutput">
+        SELECT
+            item_id,
+            COUNT(DISTINCT user_id) AS user_num
+        FROM sys_access_history
+        WHERE
+        item_id IN <foreach item="id" collection="item_ids" separator="," open="(" close=")" index="i">#{id}</foreach>
+        GROUP BY item_id
+    </select>
+</mapper>
